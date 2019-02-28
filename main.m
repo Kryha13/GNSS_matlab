@@ -15,6 +15,6 @@ sysConst = ['E']; %inne systemy: 'G', 'R', 'C', 'E'
 sat_clk = readCLK(time, sysConst);
 % 
 % 
-
+ablabl
 % [obsTable, obsMatrix, obsType] = analysObs(epoch, observablesHeader, xyzStation, eval(['obs', sysConst]), sysConst);
 
