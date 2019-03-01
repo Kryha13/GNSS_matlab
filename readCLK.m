@@ -14,7 +14,6 @@ while 1
     
     splitLine = strsplit(line);
     
-%     for i=1:1000
         if (strfind(line(1:2),'AS'))
             
             for i=1:length(sysConst)
