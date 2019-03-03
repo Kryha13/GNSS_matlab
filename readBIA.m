@@ -16,7 +16,8 @@ while 1
             
             if (strfind(line(2:4), 'ISB'))
                     
-                    if (strfind(line(7), sysConst))
+                for i=1:length(sysConst)
+                    if (strfind(line(7), sysConst(i)))
 
                         constellation = cellstr(splitLine(3));
                         prn = cellstr(splitLine(4));
@@ -31,6 +32,7 @@ while 1
                         nObs= nObs+1;
 
                     end
+                end
             end
 end
 fclose('all');
