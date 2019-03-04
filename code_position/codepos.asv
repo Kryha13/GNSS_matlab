@@ -87,7 +87,7 @@ for jj=1:3
        Xsat1  = e_r_corr(tau, Xs1);
        
 % !!!! Policzyć prędkość satelity
-       V = (Xsat1 - Xsat) / 0.1
+       V=(Xsat1 - Xsat) / 0.1
 
 % azymut, wysokosc nad horyzontem oraz odleglosc do satelity
        [azymut(ii), wys(ii), geom(ii)] = topocent(X, Xsat-X);

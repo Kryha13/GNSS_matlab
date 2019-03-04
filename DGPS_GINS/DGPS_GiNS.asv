@@ -3,16 +3,15 @@ time=gpsSecondsFirst:30:gpsSecondsLast;                   % estimation time vect
 maska=10;                                % maska w stopniach
 
 % Sto={'GNIE131E.11o','WROC131E.11o'};     %ref %rov
-% Stn={'BOR1131E.11n'};  % to efemerydy eph
+% Stn={'BOR1131E.11n'};
 
 xp=[3655332.7218, 1403901.2678, 5018038.6137;...% ref
     3655332.7217, 1403901.2599, 5018038.6545];  % rov
-%% numery warstw z obserwacjami w obsMAtrix
-codes = ["C1C", "C5Q"];
-i_C1C = find(string(obsType(:))==codes(1));
-i_C5Q = find(string(obsType(:))==codes(2));
 
-%%
+codes = ['C1C', 'C5Q'];
+i_C1C = find([obsType{1,:}]) == codes(1);
+i_C5Q = find([obsType{1,:}]) == codes(2);
+
 % files={char(Sto(1)),char(Stn)};
 % files_r={char(Sto(2)),char(Stn)};
 
@@ -21,9 +20,9 @@ i_C5Q = find(string(obsType(:))==codes(2));
 
 for k=1:length(time)
     %pozycja SPP ref
-    i=find(cell2mat(obsTable(:,1))==time(k)); % numer wiersza epoki w obsMatrix
-    obsk=obs(i,:); % obserwacje
-    iobsk=iobs(i,:); % obserwacje info 
+    i=find(round(obsTable(:,1))==time(k));
+    obsk=obs(i,:); 
+    iobsk=iobs(i,:);
     [rr_a,t(k),dtb(k),DOP(k)]=pointp(t0,obsk,iobsk,nav,inav,maska,xp(1,:)');
     r_a(k,:)=rr_a';
     

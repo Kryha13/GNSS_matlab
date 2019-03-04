@@ -1,0 +1,21 @@
+
+TRUE_OBS = OBS - BIAS
+
+w obsType kody C1C i C5Q
+
+obsMAtrix od 1 do 40 numery satelitow? czyli dla galileo ostatnie 10 puste i tak nawet jakby by³y
+
+%%
+
+
+for i=1:length(time)
+    i_epoch = find(cell2mat(obsTable(:,1))==time(i))
+
+    act_constellation = cell2mat(obsTable(i_epoch, i_code));
+    
+    for k=1:length(act_constellation)
+        prn_num = act_constellation(k);
+        prn_idx = prn_num - 200;
+        
+
+
