@@ -1,3 +1,5 @@
+function [] = codepos(X,
+
 clear;
 format long
 
@@ -10,43 +12,35 @@ prn = [  25;  17; 15; 2; 32; 19; 14; 12; 24; 6]; % trzecia epoka trzeci dzieñ
 vc = 299792458; % predkosc swiatla [m/s];
 a_maj = 6378137;
 fodw = 298.2572221;
+
 f1=1575420000;
 f2=1227600000;
 
 % tablica P12 zawiera w pierwszej kolumnie obserwacje C1, w drugiej P2
 % przyklad dla pierwszej epoki z pliku joz23280.10o
 P12 =[ 
-       23000182.140    23000181.720  
-       23456546.020    23456542.900  
-       24695831.140    24695828.780  
-       24567170.600    24567165.060  
-       23376018.340    23376018.240  
-       21190982.020    21190977.380  
-       25001647.360    25001642.600  
-       20248320.940    20248317.620  
-       20499919.660    20499919.320  
-       23155144.040    23155145.040  
-     ];
 
-Bp = [
-    -0.856
-    0.893
-    1.437 
-    -1.269
-    1.545
-    -2.291
-    -0.597
-    0.942
-    1.083
-    0.906
-];
+     ];
+% 
+% Bp = [
+%     -0.856
+%     0.893
+%     1.437 
+%     -1.269
+%     1.545
+%     -2.291
+%     -0.597
+%     0.942
+%     1.083
+%     0.906
+% ];
  
 % Wspolczynniki do kombinacji liniowej
 alfa13= f1^2/(f1^2-f2^2);
 alfa23=-f2^2/(f1^2-f2^2);
 
 
-P3= P12(:,1)*alfa13 + P12(:,2)*alfa23 + 2.546*Bp*10^-9*vc; %cz³on z Bp kodowe opoznienie sprzêtowe
+P3= P12(:,1)*alfa13 + P12(:,2)*alfa23 ;  %2.546*Bp*10^-9*vc %cz³on z Bp kodowe opoznienie sprzêtowe
 
 % czas obserwacji, w sekundach tygodnia GPS
 tobs=3*86400 + 60; % nalezy policzyc dla swojej epoki, tu dla pierwszej
@@ -124,4 +118,7 @@ diag=diag(Q);
 GDOP = sqrt(sum(diag));
 PDOP = sqrt(diag(1)+diag(2)+diag(3));
 TDOP = sqrt(diag(4));
+DOP = [GDOP PDOP TDOP];
+
+end
 
