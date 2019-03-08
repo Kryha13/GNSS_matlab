@@ -1,6 +1,21 @@
-function [X_code, DOP, dtrec_mat, Az_EL_R] = codepos(Xapr, codes, time_interval, system)
-load('2018-wczytane.mat');
-const  % wczytanie staÅ‚ych
+function [X_code, DOP, dtrec_mat, Az_EL_R] = codepos(Xapr, codes, time_interval, system, data)
+%%
+%%%%INPUT%%%%%
+% Xapr - wspó³rzêdne przybli¿one z pliku rinex
+% codes - kody wybrane do kombinacji liniowej [str1 str2]
+% time_interval - interwa³ miêdzy pierwsz¹ a ostatni¹ epok¹ dla którego
+% chcemy otrzymywaæ pozycjê
+% system - identyfikator systemu nawigacyjnego
+% data - opcjonalnie - wczytane dane z plików rinex, sp3, clk [str1 str2..]
+%%%%OUTPUT%%%%
+% X_code - wektory wspó³rzêdnych kodowych dla kolejnych epok
+% DOP - wspó³czynniki DOP dla kolejnych epok
+% dtrec_mat - poprawki zegara odbiornika dla kolejnych epok
+% Az_EL_R - azymuty, elewacje i odlegloœci do satelitów; warstwy to kolejne
+% epoki
+%%
+load(data); %opcjonalnie
+const  % wczytanie sta³ych
 
 time=gpsSecondsFirst:time_interval:gpsSecondsLast;  % interwa³ na jaki chcemy pozycje
 [sysPrefix, sysName] = sysGNSS(system); % dla Galileo 
@@ -17,9 +32,9 @@ alfa23=-f2^2/(f1^2-f2^2);
 i_code1 = find(string(obsType(:))==codes(1));
 i_code2 = find(string(obsType(:))==codes(2));
 
-X=Xapr';
-    for i=1:length(time) % pêtla po czasie na który wyznaczamy pozyccje
 
+    for i=1:length(time) % pêtla po czasie na który wyznaczamy pozyccje
+        X=Xapr';
         i_epoch = find(cell2mat(obsTable(:,1))==time(i)); % indeks wiersza epoki dla obsMatrix
         act_constellation_1 = cell2mat(obsTable(i_epoch, i_code1+2)); 
         act_constellation_2 = cell2mat(obsTable(i_epoch, i_code2+2));

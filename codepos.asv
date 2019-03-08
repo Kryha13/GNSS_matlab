@@ -1,109 +1,119 @@
-function [X, DOP, dtrec, Az_EL_R] = codepos(X_apr, codes, time_interval, system)
+function [X_code, DOP, dtrec_mat, Az_EL_R] = codepos(Xapr, codes, time_interval, system, data)
+%%
+%%%%INPUT%%%%%
+% Xapr - wspÛ≥rzÍdne przybliøone z pliku rinex
+% codes - kody wybrane do kombinacji liniowej [str1 str2]
+% time_interval - interwa≥ miÍdzy pierwszπ a ostatniπ epokπ dla ktÛrego
+% chcemy otrzymywaÊ pozycjÍ
+% system - identyfikator systemu nawigacyjnego
+% data - opcjonalnie - wczytane dane z plikÛw rinex, sp3, clk [str1 str2..]
+%%%%OUTPUT%%%%
+% X_code - wektory wspÛ≥rzÍdnych kodowych dla kolejnych epok
+% DOP - wspÛ≥czynniki DOP dla kolejnych epok
+% dtrec_mat - poprawki zegara odbiornika dla kolejnych epok
+% Az_EL_R - azymuty, elewacje i odlegloúci do satelitÛw; warstwy to kolejne
+% epoki
+%%
+load(data); %opcjonalnie
+const  % wczytanie sta≥ych
 
-const  % wczytanie sta≈Çych
-
-time=gpsSecondsFirst:time_interval:gpsSecondsLast;  % wybraƒá insterwa≈Ç na jaki chcemy dostawaƒá pozycje
+time=gpsSecondsFirst:time_interval:gpsSecondsLast;  % interwa≥ na jaki chcemy pozycje
 [sysPrefix, sysName] = sysGNSS(system); % dla Galileo 
 fodw = 298.2572221;
 tau=0.07;
 dtrec=0;
+X = [];
 % Wspolczynniki do kombinacji liniowej
 f1 = get_frequency(codes(1));
 f2 = get_frequency(codes(2));
 alfa13= f1^2/(f1^2-f2^2);
 alfa23=-f2^2/(f1^2-f2^2);
-%% indeksy wartw w obsMatrix dla u≈ºywanych kod√≥w
+%% indeksy wartw w obsMatrix dla uøywanych kodÛw
 i_code1 = find(string(obsType(:))==codes(1));
 i_code2 = find(string(obsType(:))==codes(2));
 
-n = 1;
-    while 1
+
+    for i=1:length(time) % pÍtla po czasie na ktÛry wyznaczamy pozyccje
         X=Xapr';
-        for i=1:length(time) % pƒôtla po czasie na kt√≥ry chcemy wyznaczaƒá pozycje
+        i_epoch = find(cell2mat(obsTable(:,1))==time(i)); % indeks wiersza epoki dla obsMatrix
+        act_constellation_1 = cell2mat(obsTable(i_epoch, i_code1+2)); 
+        act_constellation_2 = cell2mat(obsTable(i_epoch, i_code2+2));
+        % lista satelitÛw obserwowanych w epoce dla obu kodÛw
+        act_constellation = intersect(act_constellation_1, act_constellation_2, 'stable'); 
 
-            i_epoch = find(cell2mat(obsTable(:,1))==time(i)) % indeks wiersza epoki dla obsMatrix
+        for j=1:3
 
-            act_constellation_1 = cell2mat(obsTable(i_epoch, i_code1+2)); 
-            act_constellation_2 = cell2mat(obsTable(i_epoch, i_code2+2));
-            % lista satelit√≥w obs w epoce dla obu kod√≥w
-            act_constellation = intersect(act_constellation_1, act_constellation_2, 'stable'); 
+           [B, L, H] = togeod(a, fodw, X(1), X(2), X(3));
+           nsat=length(act_constellation);
+           isat=0;
 
-            for j=1:3
+            for k=1:nsat % pÍtla po satelitach z danej epoki
 
-               [B, L, H] = togeod(a, fodw, X(1), X(2), X(3));
-               nsat=length(act_constellation);
-               isat=0;
+                prn_num = act_constellation(k); % numer k-ty satelita w danej epoce
+                prn_idx = prn_num - sysPrefix; % index dla kolumny w obsMatrix
 
-                for k=1:nsat % pƒôtla po satelitach z danej epoki
+                P12 =[obsMatrix(i_epoch, prn_idx, i_code1) obsMatrix(i_epoch, prn_idx, i_code2)];
+                P3= P12(:,1)*alfa13 + P12(:,2)*alfa23;
 
-                    prn_num = act_constellation(k); % numer k-ty satelita w danej epoce
-                    prn_idx = prn_num - sysPrefix; % index dla kolumny w obsMatrix
+                if (j > 1)
+                   tau = (geom(k))/c;
+                end
 
-                    P12 =[obsMatrix(i_epoch, prn_idx, i_code1) obsMatrix(i_epoch, prn_idx, i_code2)];
-                    P3= P12(:,1)*alfa13 + P12(:,2)*alfa23;
+                i_sp3 = find((eph(:,2)==prn_num));
+                i_clk = find((sat_clk(:,2)==prn_num));
 
-                    if (j > 1)
-                       tau = (geom(k))/c;
-                    end
+                X_int = eph(i_sp3,1);
+                Y_int = [eph(i_sp3,3) eph(i_sp3,4) eph(i_sp3,5)];
+                Xs = lagrange(X_int, Y_int, time(i), 10); % lagrange 10 stopnia - wsp sat
 
-                    i_sp3 = find((eph(:,2)==prn_num));
-                    i_clk = find((sat_clk(:,2)==prn_num)) 
+                X_int_clk = sat_clk(i_clk,1);
+                Y_int_clk = sat_clk(i_clk,3);
+                dtsat = lagrange(X_int_clk, Y_int_clk, time(i), 2); % poprawka zegara satelity
 
-                    X_int = eph(i_sp3,1);
-                    Y_int = [eph(i_sp3,3) eph(i_sp3,4) eph(i_sp3,5)];
-                    Xs = lagrange(X_int, Y_int, time(i), 10); % lagrange 10 stopnia - wsp sat
+                Xs1 = lagrange(X_int, Y_int, time(i) + 1, 10);  %wsp w kolejnej epoce, do obliczenia predkosci satelity 
 
-                    X_int_clk = sat_clk(i_clk,1);
-                    Y_int_clk = sat_clk(i_clk,3);
-                    dtsat = lagrange(X_int_clk, Y_int_clk, time{i), 2); % poprawka zegara satelity
+                Xsat  = e_r_corr(tau, Xs');
+                Xsat1  = e_r_corr(tau, Xs1');
+                V = (Xsat1 - Xsat) / 1;  % prÍdkoúÊ satelity
 
-                    Xs1 = lagrange(X_int, Y_int, time(i) + 1, 10)  %wsp w kolejnej epoce, do obliczenia predkosci satelity 
+                [azymut(k), wys(k), geom(k)] = topocent(X, Xsat-X);
 
-                    Xsat  = e_r_corr(tau, Xs);
-                    Xsat1  = e_r_corr(tau, Xs1);
-                    V = (Xsat1 - Xsat) / 1;  % prƒôdko≈õƒá satelity
+                Az_EL_R(k,:,i) = [time(i) prn_num azymut(k) wys(k) geom(k)]; % warstwy to kolejne epoki
 
-                    [azymut(k), wys(k), geom(k)] = topocent(X, Xsat-X);
+                if wys(k)>=10  % maska 10
+                   isat=isat+1;
+                   PACT(isat)=P3;
 
-                    Az_EL_R(n,:) = [time(i) prn_num azymut(k) wys(k) geom(k)];
+                    % poprawki do pseudoodleg≥oúci
+                   drel(k)= -(2*Xsat'*V)/c;
+                   dtropo(k)=tropo(wys(k), H);
 
-                    if wys(k)>=10
-                       isat=isat+1;
-                       PACT(isat)=P3(k);
 
-                        % poprawki do pseudoodleg≈Ço≈õci
-                       drel(k)= -(2*Xsat'*V)/c;
-                       dtropo(k)=tropo(wys(k), H);
-                       dtrec;
+                   PCOM(isat) = geom(k) - dtsat*c - drel(k) + dtropo(k);
+                   A(isat,1) = -(Xsat(1) - X(1))/geom(k);
+                   A(isat,2) = -(Xsat(2) - X(2))/geom(k);
+                   A(isat,3) = -(Xsat(3) - X(3))/geom(k);
+                   A(isat,4) = 1;
+                end
+            end % Koniec petli po satelitach 
 
-                       PCOM(isat) = geom(k) - dtsat*c - drel(k) + dtropo(k);
-                       A(isat,1) = -(Xsat(1) - X(1))/geom(k);
-                       A(isat,2) = -(Xsat(2) - X(2))/geom(k);
-                       A(isat,3) = -(Xsat(3) - X(3))/geom(k);
-                       A(isat,4) = 1;
-                    end
-                end % Koniec petli po satelitach 
+            b= PACT' - PCOM';
+           x=inv(A'*A)*(A'*b);
+           v=A*x-b;
+           m0=sqrt(v'*v/(isat-4));
+           dtrec = (dtrec+x(4))/c;
+           dtrec_mat(i,:) = [time(i) dtrec]; % poprawka zegara odbiornika
+           X_code(i,:) = [time(i) (X+x(1:3))'];  % wspolrzedne
 
-                b= PACT' - PCOM';
-               x=inv(A'*A)*(A'*b);
-               v=A*x-b;
-               m0=sqrt(v'*v/(isat-4));
-               dtrec (n,:) = [time(i) dtrec+x(4)/c]; % poprawka zegara odbiornika
-               X(n,:) = X+x(1:3);  % wspolrzedne
+        end % Koniec petli jj
 
-            end % Koniec petli jj
+    Q = inv(A'*A);
+    diagonal=diag(Q);
+    GDOP = sqrt(sum(diagonal));
+    PDOP = sqrt(diagonal(1)+diagonal(2)+diagonal(3));
+    TDOP = sqrt(diagonal(4));
+    DOP(i,:) = [time(i) GDOP PDOP TDOP];  % DOPY
 
-        Q = inv(A'*A);
-        diag=diag(Q);
-
-        GDOP = sqrt(sum(diag));
-        PDOP = sqrt(diag(1)+diag(2)+diag(3));
-        TDOP = sqrt(diag(4));
-        DOP(n,:) = [time(i) prn_num GDOP PDOP TDOP];  % DOPY
-
-        end % koniec petli po czasie
-        n = n + 1;
-    end
-
+    end % koniec petli po czasie
 end
 			
