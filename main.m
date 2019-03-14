@@ -36,10 +36,13 @@
 
 %% odl przybli¿ona po uwzglêdnieniu poprawki zegara odbiornika
 
-ro_approx1 = ro_approx(X_code1, dtrec1, tau1, data(1));
-ro_approx2 = ro_approx(X_code2, dtrec2, tau2, data(2));
+% ro_approx1 = ro_approx(X_code1, dtrec1, tau1, data(1));
+% ro_approx2 = ro_approx(X_code2, dtrec2, tau2, data(2));
+% 
+% dro = squeeze(ro_approx1(1,3,:)) - squeeze(Az_EL_R1(1,5,:)); %róznica miêdzy odl z kodowego a przybli¿on¹ dla odb1 sat1
 
-dro = squeeze(ro_approx1(1,3,:)) - squeeze(Az_EL_R1(1,5,:)); %róznica miêdzy odl z kodowego a przybli¿on¹ dla odb1 sat1
 
-
+% obs_types = ["L1C" "L5Q" "C1C" "C5Q"]; % wybór obserwacji do ró¿nic
+data = 'data_all.mat';
+[single_diff] = single_differences(time_interval, obsType1, system, obsMatrix1, obsMatrix2, data);
 
