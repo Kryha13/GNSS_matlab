@@ -3,8 +3,16 @@ orbity dla precyzyjncy poprawki zehara xd2 wzglednie
 pozycje kodowe
 poprawki zegara odb., wys, azymut, dopy osobno dla odbiornikow
 
+
 podwojne roznice kodowe i fazowe
 jednoepokowo bo utrata cykli
 wagi obserwacji, bledy w zaleznosci od wysokosci lub SNR!
 rozwiazanie
 
+
+
+
+odleglosc przyblizona po poprawce odbiornika
+znajdywanie najwyzsego satelity w epoce
+pojedyncze roznice
+podwojne roznice - macierz 

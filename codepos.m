@@ -1,4 +1,4 @@
-function [X_code, DOP, dtrec_mat, Az_EL_R] = codepos(Xapr, codes, time_interval, system, data)
+function [X_code, DOP, dtrec_mat, Az_EL_R, dtrop, tau_ost] = codepos(Xapr, codes, time_interval, system, data)
 %%
 %%%%INPUT%%%%%
 % Xapr - wspó³rzêdne przybli¿one z pliku rinex
@@ -7,6 +7,7 @@ function [X_code, DOP, dtrec_mat, Az_EL_R] = codepos(Xapr, codes, time_interval,
 % chcemy otrzymywaæ pozycjê
 % system - identyfikator systemu nawigacyjnego
 % data - opcjonalnie - wczytane dane z plików rinex, sp3, clk [str1 str2..]
+
 %%%%OUTPUT%%%%
 % X_code - wektory wspó³rzêdnych kodowych dla kolejnych epok
 % DOP - wspó³czynniki DOP dla kolejnych epok
@@ -20,7 +21,7 @@ const  % wczytanie sta³ych
 time=gpsSecondsFirst:time_interval:gpsSecondsLast;  % interwa³ na jaki chcemy pozycje
 [sysPrefix, sysName] = sysGNSS(system); % dla Galileo 
 fodw = 298.2572221;
-tau=0.07;
+tau=0.07; %przybli¿ony czas propagacji sygna³u
 dtrec=0;
 X = [];
 % Wspolczynniki do kombinacji liniowej
@@ -58,6 +59,10 @@ i_code2 = find(string(obsType(:))==codes(2));
                 if (j > 1)
                    tau = (geom(k))/c;
                 end
+                
+                if j==3
+                    tau_ost(k,:,i) = [time(i) prn_num tau];
+                end
 
                 i_sp3 = find((eph(:,2)==prn_num));
                 i_clk = find((sat_clk(:,2)==prn_num));
@@ -87,7 +92,7 @@ i_code2 = find(string(obsType(:))==codes(2));
                     % poprawki do pseudoodleg³oœci
                    drel(k)= -(2*Xsat'*V)/c;
                    dtropo(k)=tropo(wys(k), H);
-
+                   dtrop(k,:,i) = [time(i) dtropo(k)];
 
                    PCOM(isat) = geom(k) - dtsat*c - drel(k) + dtropo(k);
                    A(isat,1) = -(Xsat(1) - X(1))/geom(k);
@@ -97,7 +102,7 @@ i_code2 = find(string(obsType(:))==codes(2));
                 end
             end % Koniec petli po satelitach 
 
-            b= PACT' - PCOM';
+           b= PACT' - PCOM';
            x=inv(A'*A)*(A'*b);
            v=A*x-b;
            m0=sqrt(v'*v/(isat-4));
