@@ -25,8 +25,8 @@
 %     3655336.8160  1403899.0382  5018036.4527]; % SEP2
 %  
 % codes = ["C1C" "C5Q"]; % wybrane kody
-% time_interval = 100; % interwa³ na jaki chcemy pozycje
-% system = 'E';
+time_interval = 100; % interwa³ na jaki chcemy pozycje
+system = 'E';
 % data = ["2018-SEPT.mat" "2018-SEP2.mat"]; %wczytane dane dla odbiorników
 % 
 % [X_code1, DOP1, dtrec1, Az_EL_R1, tropo1, tau1] = codepos(X(1,:), codes, time_interval, system, data(1));
@@ -41,8 +41,13 @@
 % 
 % dro = squeeze(ro_approx1(1,3,:)) - squeeze(Az_EL_R1(1,5,:)); %róznica miêdzy odl z kodowego a przybli¿on¹ dla odb1 sat1
 
+%% pojedyncze ró¿nice
 
-% obs_types = ["L1C" "L5Q" "C1C" "C5Q"]; % wybór obserwacji do ró¿nic
+obs_types = ["C1C" "L1C" "C6C" "L6C" "C5Q" "L5Q" "C7Q" "L7Q" "C8Q" "L8Q"]; % wybór obserwacji do ró¿nic
 data = 'data_all.mat';
-[single_diff] = single_differences(time_interval, obsType1, system, obsMatrix1, obsMatrix2, data);
+[single_diff] = single_differences(time_interval, obs_types, system, obsMatrix1, obsMatrix2, Az_EL_R1, data);
+
+%% podwójne róznice
+
+double_diff = double_differences(single_diff, length(obs_types), 8);
 

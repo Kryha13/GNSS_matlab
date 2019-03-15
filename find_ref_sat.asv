@@ -1,6 +1,0 @@
-function [ref_sat] = find_ref_sat(Az_EL_R, epoch_idx)
-
-el = Az_EL_R(
-
-end
-
