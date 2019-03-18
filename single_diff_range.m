@@ -1,8 +1,9 @@
-function [single_diff] = single_diff_range(time_interval, ro_approx1, ro_approx2, Az_EL_R, data)
+function [single_differ] = single_diff_range(time_interval, ro_approx1, ro_approx2, Az_EL_R, data)
 load(data)
 % [sysPrefix, sysName] = sysGNSS(system); % dla Galileo 
 epochs = gpsSecondsFirst:time_interval:gpsSecondsLast;
 single_diff = {};
+single_differ = [];
 j = 1;
     for i=1:length(epochs)
     
@@ -21,14 +22,17 @@ j = 1;
             idx_2 = find(squeeze(ro_approx2(:,2,i))==prn_num);
 
             single_diff(k,i) = {ro_approx1(idx_1, 3, i) - ro_approx2(idx_2, 3, i)};
-%                 single_diff(single_diff==0) = NaN;
+            
+            if (single_diff{k,i}==0)
+                single_differ(k,i) = 0;
+            else
+                single_differ(k,i) = squeeze(single_diff{k,i});
+            end
             % satelita referencyjny jako pierwszy
             if k==nsat
                 single_diff([1 sat_ref],i) = single_diff([sat_ref 1],i);
             end
-        end
-        
+        end       
     end
-
 end
 
