@@ -13,6 +13,10 @@ single_differ = [];
             act_constellation_1 = cell2mat(obsTable1(i_epoch, i_obs+2)); 
             act_constellation_2 = cell2mat(obsTable2(i_epoch, i_obs+2));
             act_constellation = intersect(act_constellation_1, act_constellation_2, 'stable');
+            low_elev = find(Az_EL_R(:, 4, i)<10);
+            low_elev_satts = Az_EL_R(low_elev, 2, i);
+            act_constellation = setdiff(act_constellation, low_elev_satts);
+            
             nsat=length(act_constellation);
             [sat_ref, sat_idx] = find_ref_sat(Az_EL_R, j);
             sat_ref = find(act_constellation==sat_ref);
