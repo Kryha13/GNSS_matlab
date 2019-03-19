@@ -1,4 +1,4 @@
-function [ro] = ro_approx(Xcode, dtrec, tau, data)
+function [ro, du] = ro_approx(Xcode, dtrec, tau, data)
 %%%%%% INPUT %%%%%%
 % Xcode - tablica ze wspó³rzêdnymi kodowymi dla kolejnych epok
 % dtrec - tablica z poprawkami zegara odbiornika dla kolejnych epok
@@ -26,7 +26,8 @@ act_time = Xcode(:,1) + dtrec(:,2); % czas przesuniêty o poprawkê zegar odbiorni
             time_sat = act_time(i) - tau(j,3,i);
             Xs = lagrange(X_int, Y_int, time_sat, 10);          
             Xo = Xcode(i,2:4);
-            ro(j,:,i) = [act_time(i) prn_num norm(Xo-Xs)]; 
+            ro(j,:,i) = [act_time(i) prn_num norm(Xo-Xs)];
+            du(j,:,i) = (Xo-Xs)/ro(j,3,i);
         end
     end
 end

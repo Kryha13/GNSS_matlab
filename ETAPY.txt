@@ -12,7 +12,7 @@ rozwiazanie
 
 
 
-odleglosc przyblizona po poprawce odbiornika
-znajdywanie najwyzsego satelity w epoce
-pojedyncze roznice
-podwojne roznice - macierz 
+odleglosc przyblizona po poprawce odbiornika - done
+znajdywanie najwyzsego satelity w epoce - done
+pojedyncze roznice - done 
+podwojne roznice - macierz - done

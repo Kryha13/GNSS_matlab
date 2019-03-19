@@ -24,6 +24,7 @@ fodw = 298.2572221;
 tau=0.07; %przybli¿ony czas propagacji sygna³u
 dtrec=0;
 X = [];
+% constellation = {};
 % Wspolczynniki do kombinacji liniowej
 f1 = get_frequency(codes(1));
 f2 = get_frequency(codes(2));
@@ -41,7 +42,7 @@ i_code2 = find(string(obsType(:))==codes(2));
         act_constellation_2 = cell2mat(obsTable(i_epoch, i_code2+2));
         % lista satelitów obserwowanych w epoce dla obu kodów
         act_constellation = intersect(act_constellation_1, act_constellation_2, 'stable'); 
-
+      
         for j=1:3
 
            [B, L, H] = togeod(a, fodw, X(1), X(2), X(3));
@@ -86,13 +87,14 @@ i_code2 = find(string(obsType(:))==codes(2));
                 Az_EL_R(k,:,i) = [time(i) prn_num azymut(k) wys(k) geom(k)]; % warstwy to kolejne epoki
 
                 if wys(k)>=10  % maska 10
+%                     constellation(k,i) = {act_constellation(k)};
                    isat=isat+1;
                    PACT(isat)=P3;
 
                     % poprawki do pseudoodleg³oœci
                    drel(k)= -(2*Xsat'*V)/c;
                    dtropo(k)=tropo(wys(k), H);
-                   dtrop(k,:,i) = [time(i) dtropo(k)];
+                   dtrop(k,:,i) = [time(i) prn_num dtropo(k)];
 
                    PCOM(isat) = geom(k) - dtsat*c - drel(k) + dtropo(k);
                    A(isat,1) = -(Xsat(1) - X(1))/geom(k);
