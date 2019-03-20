@@ -27,10 +27,10 @@
 % codes = ["C1C" "C5Q"]; % wybrane kody
 time_interval = 100; % interwa³ na jaki chcemy pozycje
 system = 'E';
-data = ["2018-SEPT.mat" "2018-SEP2.mat"]; %wczytane dane dla odbiorników
+% data = ["2018-SEPT.mat" "2018-SEP2.mat"]; %wczytane dane dla odbiorników
 % 
-[X_code1, DOP1, dtrec1, Az_EL_R1, tropo1, tau1] = codepos(X(1,:), codes, time_interval, system, data(1));
-[X_code2, DOP2, dtrec2, Az_EL_R2, tropo2, tau2] = codepos(X(2,:), codes, time_interval, system, data(2));
+% [X_code1, DOP1, dtrec1, Az_EL_R1, tropo1, tau1] = codepos(X(1,:), codes, time_interval, system, data(1));
+% [X_code2, DOP2, dtrec2, Az_EL_R2, tropo2, tau2] = codepos(X(2,:), codes, time_interval, system, data(2));
 % 
 % d = X_code1 - X_code2
 % 
@@ -50,7 +50,7 @@ data = 'data_all.mat';
 % 
 % single_diff_range1 = single_diff_range(time_interval, ro_approx1, ro_approx2, Az_EL_R1, data);
 
-single_diff_tropo = single_diff_range(time_interval, tropo1, tropo2, Az_EL_R1, data);
+% single_diff_tropo = single_diff_range(time_interval, tropo1, tropo2, Az_EL_R1, data);
 
 % single_diff_dux = single_diff_u(time_interval, du1, du2, Az_EL_R1,1, data);
 % single_diff_duy = single_diff_u(time_interval, du1, du2, Az_EL_R1,2, data);
@@ -63,8 +63,8 @@ single_diff_tropo = single_diff_range(time_interval, tropo1, tropo2, Az_EL_R1, d
 % double_diff_range = double_differences(single_diff_range, 1, 7);
 % double_diff_range = repmat(double_diff_range, length(obs_types), 1);
 
-double_diff_tropo = double_differences(single_diff_tropo, 1, 7);
-double_diff_tropo = repmat(double_diff_tropo, length(obs_types), 1);
+% double_diff_tropo = double_differences(single_diff_tropo, 1, 7);
+% double_diff_tropo = repmat(double_diff_tropo, length(obs_types), 1);
 
 % podwójne ró¿nice wersorów do macierzy A
 % double_diff_dux = double_differences(single_diff_dux, 1, 7);
@@ -78,7 +78,8 @@ double_diff_tropo = repmat(double_diff_tropo, length(obs_types), 1);
 
 %% model stochastyczny 
 
-% n_obs = 10;
-% C = C_matrix(Az_EL_R1, Az_EL_R2, time_interval, phase_freq, n_obs, data);
-
+n_obs = 10;
+epochs = gpsSecondsFirst:time_interval:gpsSecondsLast;
+C = C_matrix(Az_EL_R1, Az_EL_R2, time_interval, phase_freq, data);
+Cl = Cl_matrix(C, phase_freq, time_interval, data);
 
