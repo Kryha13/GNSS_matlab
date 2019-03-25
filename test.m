@@ -386,6 +386,28 @@ for i=1:length(epochs)
     
     CL = 2 * D * C0 * D';
     
+    %% rozwi¹zanie modelu pozycjonowania - FLOAT
+    
+    ATCA = DU' * inv(CL) * DU;
+    ATCB = DU' * inv(CL) * B;
+    BTCA = B' * inv(CL) * DU;
+    BTCB = B' * inv(CL) * B;
+    
+    ATCL = DU' * inv(CL) * L;
+    BTCL = B' * inv(CL) * L;
+    
+    M1 = [ATCA ATCB; BTCA BTCB];
+    M2 = [ATCL; BTCL];
+    
+    xN = inv(M1)*M2;
+    N = xN(4:length(xN));
+    
+    Cv = inv(M1);
+    
+    Cn = Cv(4:length(xN),4:length(xN));
+    
+    [afixed,sqnorm,Ps,Qzhat,Z,nfixed,mu]=LAMBDA(N,Cn);
+    %%
   
 end
    
