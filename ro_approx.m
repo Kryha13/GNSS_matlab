@@ -1,4 +1,4 @@
-function [ro, du] = ro_approx(Xcode, dtrec, tau, data)
+function [ro, du, Xsat_ost] = ro_approx(Xcode, dtrec, tau, data)
 %%%%%% INPUT %%%%%%
 % Xcode - tablica ze wspó³rzêdnymi kodowymi dla kolejnych epok
 % dtrec - tablica z poprawkami zegara odbiornika dla kolejnych epok
@@ -11,6 +11,8 @@ function [ro, du] = ro_approx(Xcode, dtrec, tau, data)
 %%
 load(data)
 act_time = Xcode(:,1) + dtrec(:,2); % czas przesuniêty o poprawkê zegar odbiornika
+Xsat = [];
+Xsat_ost = [];
 
     for i=1:length(act_time)
         act_constellation = squeeze(tau(:,2,i));
@@ -28,7 +30,12 @@ act_time = Xcode(:,1) + dtrec(:,2); % czas przesuniêty o poprawkê zegar odbiorni
             Xo = Xcode(i,2:4);
             ro(j,:,i) = [act_time(i) prn_num norm(Xo-Xs)];
             du(j,:,i) = (Xo-Xs)/ro(j,3,i);
+            Xsat(j,:) = [act_time(i) prn_num Xs];
+            Xs = [];
+           
         end
+        Xsat_ost = [Xsat_ost; Xsat];
+        Xsat = [];
     end
 end
 

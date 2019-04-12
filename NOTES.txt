@@ -1,4 +1,60 @@
-# single diff
-jezeli w kolejnej epoce jest wiecej satelitow niz w poprzedniej to automatycznie dodaje 0 w kolejnym wierszu poprzedniej 
-epoki zeby wymiar siê zgadza³
+-----------PRZYGOTOWANIE DANYCH--------------
 
+konkretna epoka
+konstelacja dla obu odbiorników 
+czêœæ wspólna 
+pobieram dla nich azymuty, elewacje, odleglosc przybli¿on¹ i troposfere
+wybieram elewacje powy¿ej 10 st??
+referencyjny - musi obserwowaæ wszystkie sygna³y w danej epoce w obu odbiornikach (chyba ni¿ej)
+zapisywac gdzies co do ktorego itp 
+
+-----------MODEL DETERMINISTYCZNY-------------
+
+tablice dla poszczególnych typów L1, L2...P1,P2.. dla obu odbiorników 
+wpisuje tam kolejno obserwacje dla danego sateity na tym kodzie/czestotliwosci
+czêœæ wspólna ka¿dego
+referencyjny - musi obserwowaæ wszystkie sygna³y w danej epoce osobno dla odbiornikow
+
+
+pojedyncze ró¿nice
+macierz tworz¹ca podwójnych ró¿nic
+podwójne ró¿nice
+podwójne ró¿nice troposfery 
+
+licze wersory tyle ile satelitow dla ka¿dego kodu - tylko dla ruchomego ! 
+
+UWZGLÊDNIÆ REFERENCYJNEGO !!!
+
+macierz B
+
+-----------MODEL STOCHASTYCZNY (bez kowarinacji)---------------
+
+pojedynczo dla ka¿dej czestotliwosci/kodu 
+
+macierz Co
+macierz D
+macierz Cl  
+
+zestawiæ blkdiag
+
+
+-----------------------------------------------------------------
+
+z obserwacyjnych
+
+3655333,17900000	1403901,22580000	5018038,35650000
+3655336,81600000	1403899,03820000	5018036,45270000
+
+3.637				-2.1876				-1.9039
+
+ 
+ katalogowe
+WUT1	3655333,908 	1403901,088		5018038,137	 
+WUT2	3655337,607 	1403898,732		5018036,323 
+delta	3.699			-2.356			-1,814
+		
+ X2 - x_fixed - X1 -- dzia³a
+ 
+ X2 + x_fixed - X1 -- powinno byæ 
+ 
+ 

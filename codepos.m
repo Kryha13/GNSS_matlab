@@ -92,18 +92,18 @@ i_code2 = find(string(obsType(:))==codes(2));
                    PACT(isat)=P3;
 
                     % poprawki do pseudoodleg³oœci
-                   drel(k)= -(2*Xsat'*V)/c;
+%                    drel(k)= -(2*Xsat'*V)/c;
                    dtropo(k)=tropo(wys(k), H);
                    dtrop(k,:,i) = [time(i) prn_num dtropo(k)];
 
-                   PCOM(isat) = geom(k) - dtsat*c - drel(k) + dtropo(k);
+                   PCOM(isat) = geom(k) - dtsat*c  + dtropo(k);
                    A(isat,1) = -(Xsat(1) - X(1))/geom(k);
                    A(isat,2) = -(Xsat(2) - X(2))/geom(k);
                    A(isat,3) = -(Xsat(3) - X(3))/geom(k);
                    A(isat,4) = 1;
                 end
             end % Koniec petli po satelitach 
-
+            
            b= PACT' - PCOM';
            x=inv(A'*A)*(A'*b);
            v=A*x-b;

@@ -1,23 +1,23 @@
 const;
+load('dane_do_test.mat')
 % time_interval = 100;
-X1 = [3655333.1790; 1403901.2258; 5018038.3565]; %SEPT
-X2 = [3655336.8160; 1403899.0382; 5018036.4527]; % SEP2
+X1 = X(1,:)'; %SEPT
+X2 = X(2,:)'; % SEP2
 epochs = gpsSecondsFirst:time_interval:gpsSecondsLast;
 act_time1 = epochs + dtrec1(:,2);
 act_time2 = epochs + dtrec2(:,2);
 fodw = 298.2572221;
-tau = 0.07; % przybli¿ony 
+tau1 = 0.07;% przybli¿ony
+tau2 = 0.07;
 % do stochastycznego
 ac = 0.75; 
 sigma = 0.002;
-covL = 0.003;
-covP = 0.35;
 
 obs_types = ["C1C" "L1C" "C6C" "L6C" "C5Q" "L5Q" "C7Q" "L7Q" "C8Q" "L8Q"]; % wybór obserwacji 
 phase_freq = [fE1 fE6 fE5 fE7 fE8];
 system = 'E';
 [sysPrefix, sysName] = sysGNSS(system);
-fail_sats = [220 222]; % odbierany by³ sygna³ z 220 w obs a w efemerydach go nie ma nawet
+fail_sats = [220 222 214 218]; % odbierany by³ sygna³ z 220 w obs a w efemerydach go nie ma nawet
 % ewentualnie 214 i 218
 [B1, L1, H1] = togeod(a, fodw, X1(1), X1(2), X1(3));
 [B2, L2, H2] = togeod(a, fodw, X2(1), X2(2), X2(3));
@@ -75,22 +75,30 @@ for i=1:length(epochs)
            % pêtla do obliczenia tau
            for s=1:2
                 if (s > 1)
-                   tau = (geom(k))/c;
+                   tau1 = (geo1(k))/c;
+                   tau2 = (geo2(k))/c;
                 end               
-                Xs  = e_r_corr(tau, Xs');            
-                [azymut(k), wys(k), geom(k)] = topocent(X2, Xs-X2);              
-                Xs = Xs';
+                Xs1  = e_r_corr(tau1, Xs');
+                Xs2  = e_r_corr(tau2, Xs');
+                [az1(k), w1(k), geo1(k)] = topocent(X1, Xs1-X1);
+                [az2(k), w2(k), geo2(k)] = topocent(X2, Xs2-X2);              
+                Xs1 = Xs1';
+                Xs2 = Xs2';
            end
+           Xs1 = [];
+           Xs2 = [];
            % wsp sat po poprawce zegara odbiornika i tau
-           Xs = lagrange(X_int, Y_int, epochs(i)+dtrec2(i,2)-tau, 10);
+           Xs1 = lagrange(X_int, Y_int, epochs(i)-dtrec1(i,2)-tau1, 10);
+           Xs2 = lagrange(X_int, Y_int, epochs(i)-dtrec2(i,2)-tau2, 10);
            % znowu obrót
-           Xs  = e_r_corr(tau, Xs');
+           Xs1  = e_r_corr(tau1, Xs1');
+           Xs2 = e_r_corr(tau2, Xs2');
            %ostateczne wartoœci azymutu, wysokoœci, odleglosci i tropo
-           [azymut1(k), wys1(k), geom1(k)] = topocent(X1, Xs-X1);
-           [azymut2(k), wys2(k), geom2(k)] = topocent(X2, Xs-X2);
+           [azymut1(k), wys1(k), geom1(k)] = topocent(X1, Xs1-X1);
+           [azymut2(k), wys2(k), geom2(k)] = topocent(X2, Xs2-X2);
            dtropo1(k)=tropo(wys1(k), H1);
            dtropo2(k)=tropo(wys2(k), H2);
-           u(k,:) = (Xs - X2)/geom2(k); % wersory u
+           u(k,:) = (Xs2 - X2)/geom2(k); % wersory u
            C(k) = (1+ac/sind(wys2(k)))^2 * sigma^2; % do stochastycznego
            
            obs1(k) = obsMatrix1(i_epoch, prn_idx, i_obs);
@@ -166,7 +174,7 @@ for i=1:length(epochs)
             geomC1_1 = geom1;
             geomC1_2 = geom2;
             uC1 = u;
-            CC1 = C*100;
+            CC1 = C*2500;
         elseif string(obs_types(j)) == "L1C"
             L1a = obs1;
             L1b = obs2;
@@ -184,7 +192,7 @@ for i=1:length(epochs)
             geomC6_1 = geom1;
             geomC6_2 = geom2;
             uC6 = u;
-            CC6 = C*100;
+            CC6 = C*2500;
         elseif string(obs_types(j)) == "L6C"
             L6a = obs1;
             L6b = obs2;
@@ -193,7 +201,7 @@ for i=1:length(epochs)
             geomL6_1 = geom1;
             geomL6_2 = geom2;
             uL6 = u;
-            CL6 = phase_freq(1)/phase_freq(2) * C;
+            CL6 =  C;
         elseif string(obs_types(j)) == "C5Q"
             C5a = obs1;
             C5b = obs2;
@@ -202,7 +210,7 @@ for i=1:length(epochs)
             geomC5_1 = geom1;
             geomC5_2 = geom2;
             uC5 = u;
-            CC5 = C*100;
+            CC5 = C*2500;
         elseif string(obs_types(j)) == "L5Q"
             L5a = obs1;
             L5b = obs2;
@@ -211,7 +219,7 @@ for i=1:length(epochs)
             geomL5_1 = geom1;
             geomL5_2 = geom2;
             uL5 = u;
-            CL5 = phase_freq(1)/phase_freq(3) * C;
+            CL5 =  C;
         elseif string(obs_types(j)) == "C7Q"
             C7a = obs1;
             C7b = obs2;
@@ -220,7 +228,7 @@ for i=1:length(epochs)
             geomC7_1 = geom1;
             geomC7_2 = geom2;
             uC7 = u;
-            CC7 = C*100;
+            CC7 = C*2500;
         elseif string(obs_types(j)) == "L7Q"
             L7a = obs1;
             L7b = obs2;
@@ -229,7 +237,7 @@ for i=1:length(epochs)
             geomL7_1 = geom1;
             geomL7_2 = geom2;
             uL7 = u;
-            CL7 = phase_freq(1)/phase_freq(4) * C;
+            CL7 =  C;
         elseif string(obs_types(j)) == "C8Q"
             C8a = obs1;
             C8b = obs2;
@@ -238,7 +246,7 @@ for i=1:length(epochs)
             geomC8_1 = geom1;
             geomC8_2 = geom2;
             uC8 = u;
-            CC8 = C*100;
+            CC8 = C*2500;
         elseif string(obs_types(j)) == "L8Q"
             L8a = obs1;
             L8b = obs2;
@@ -247,7 +255,7 @@ for i=1:length(epochs)
             geomL8_1 = geom1;
             geomL8_2 = geom2;
             uL8 = u;
-            CL8 = phase_freq(1)/phase_freq(5) * C;
+            CL8 =  C;
         end
         
         % czyszczenie przed nast iteracj¹
@@ -267,54 +275,54 @@ for i=1:length(epochs)
     info(1, :, i) = {epochs(i) sat_ref1 sat_ref2 act_constellation};
        
     % pojedyncze ró¿nice i macierze tworz¹ce podwójnych
-    single_diff_C1 = (C1b - C1a)';
-    single_diff_tropoC1 = (dtropo2C1 - dtropo1C1)';
-    single_diff_geomC1 = (geomC1_2 - geomC1_1)';
+    single_diff_C1 = (C1a - C1b)';
+    single_diff_tropoC1 = (dtropo1C1 - dtropo2C1)';
+    single_diff_geomC1 = (geomC1_1 - geomC1_2)';
     d_C1 = design_matrix(length(single_diff_C1));
     
-    single_diff_L1 = (L1b - L1a)';
-    single_diff_tropoL1 = (dtropo2L1 - dtropo1L1)';
-    single_diff_geomL1 = (geomL1_2 - geomL1_1)';
+    single_diff_L1 = (L1a - L1b)';
+    single_diff_tropoL1 = (dtropo1L1 - dtropo2L1)';
+    single_diff_geomL1 = (geomL1_1 - geomL1_2)';
     d_L1 = design_matrix(length(single_diff_L1));
     
-    single_diff_C6 = (C6b - C6a)';
-    single_diff_tropoC6 = (dtropo2C6 - dtropo1C6)';
-    single_diff_geomC6 = (geomC6_2 - geomC6_1)';
+    single_diff_C6 = (C6a - C6b)';
+    single_diff_tropoC6 = (dtropo1C6 - dtropo2C6)';
+    single_diff_geomC6 = (geomC6_1 - geomC6_2)';
     d_C6 = design_matrix(length(single_diff_C6));
     
-    single_diff_L6 = (L6b - L6a)';
-    single_diff_tropoL6 = (dtropo2L6 - dtropo1L6)';
-    single_diff_geomL6 = (geomL6_2 - geomL6_1)';
+    single_diff_L6 = (L6a - L6b)';
+    single_diff_tropoL6 = (dtropo1L6 - dtropo2L6)';
+    single_diff_geomL6 = (geomL6_1 - geomL6_2)';
     d_L6 = design_matrix(length(single_diff_L6));
     
-    single_diff_C5 = (C5b - C5a)';
-    single_diff_tropoC5 = (dtropo2C5 - dtropo1C5)';
-    single_diff_geomC5 = (geomC5_2 - geomC5_1)';
+    single_diff_C5 = (C5a - C5b)';
+    single_diff_tropoC5 = (dtropo1C5 - dtropo2C5)';
+    single_diff_geomC5 = (geomC5_1 - geomC5_2)';
     d_C5 = design_matrix(length(single_diff_C5));
     
-    single_diff_L5 = (L5b - L5a)';
-    single_diff_tropoL5 = (dtropo2L5 - dtropo1L5)';
-    single_diff_geomL5 = (geomL5_2 - geomL5_1)';
+    single_diff_L5 = (L5a - L5b)';
+    single_diff_tropoL5 = (dtropo1L5 - dtropo2L5)';
+    single_diff_geomL5 = (geomL5_1 - geomL5_2)';
     d_L5 = design_matrix(length(single_diff_L5));
     
-    single_diff_C7 = (C7b - C7a)';
-    single_diff_tropoC7 = (dtropo2C7 - dtropo1C7)';
-    single_diff_geomC7 = (geomC7_2 - geomC7_1)';
+    single_diff_C7 = (C7a - C7b)';
+    single_diff_tropoC7 = (dtropo1C7 - dtropo2C7)';
+    single_diff_geomC7 = (geomC7_1 - geomC7_2)';
     d_C7 = design_matrix(length(single_diff_C7));
     
-    single_diff_L7 = (L7b - L7a)';
-    single_diff_tropoL7 = (dtropo2L7 - dtropo1L7)';
-    single_diff_geomL7 = (geomL7_2 - geomL7_1)';
+    single_diff_L7 = (L7a - L7b)';
+    single_diff_tropoL7 = (dtropo1L7 - dtropo2L7)';
+    single_diff_geomL7 = (geomL7_1 - geomL7_2)';
     d_L7 = design_matrix(length(single_diff_L7));
     
-    single_diff_C8 = (C8b - C8a)';
-    single_diff_tropoC8 = (dtropo2C8 - dtropo1C8)';
-    single_diff_geomC8 = (geomC8_2 - geomC8_1)';
+    single_diff_C8 = (C8a - C8b)';
+    single_diff_tropoC8 = (dtropo1C8 - dtropo2C8)';
+    single_diff_geomC8 = (geomC8_1 - geomC8_2)';
     d_C8 = design_matrix(length(single_diff_C8));
     
-    single_diff_L8 = (L8b - L8a)';
-    single_diff_tropoL8 = (dtropo2L8 - dtropo1L8)';
-    single_diff_geomL8 = (geomL8_2 - geomL8_1)';
+    single_diff_L8 = (L8a - L8b)';
+    single_diff_tropoL8 = (dtropo1L8 - dtropo2L8)';
+    single_diff_geomL8 = (geomL8_1 - geomL8_2)';
     d_L8 = design_matrix(length(single_diff_L8));
     
     %podwójne ró¿nice, wersory u, macierze B
@@ -323,7 +331,7 @@ for i=1:length(epochs)
     double_diff_geomC1 = d_C1*single_diff_geomC1;
     du_C1 = d_C1 * uC1; 
     
-    double_diff_L1 = d_L1*single_diff_L1;
+    double_diff_L1 = d_L1*single_diff_L1*(c/phase_freq(1));
     double_diff_tropoL1 = d_L1*single_diff_tropoL1;
     double_diff_geomL1 = d_L1*single_diff_geomL1;
     du_L1 = d_L1 * uL1;
@@ -334,7 +342,7 @@ for i=1:length(epochs)
     double_diff_geomC6 = d_C6*single_diff_geomC6;
     du_C6 = d_C6 * uC6;
     
-    double_diff_L6 = d_L6*single_diff_L6;
+    double_diff_L6 = d_L6*single_diff_L6*(c/phase_freq(2));
     double_diff_tropoL6 = d_L6*single_diff_tropoL6;
     double_diff_geomL6 = d_L6*single_diff_geomL6;
     du_L6 = d_L6 * uL6;
@@ -345,7 +353,7 @@ for i=1:length(epochs)
     double_diff_geomC5 = d_C5*single_diff_geomC5;
     du_C5 = d_C5 * uC5;
     
-    double_diff_L5 = d_L5*single_diff_L5;
+    double_diff_L5 = d_L5*single_diff_L5*(c/phase_freq(3));
     double_diff_tropoL5 = d_L5*single_diff_tropoL5;
     double_diff_geomL5 = d_L5*single_diff_geomL5;
     du_L5 = d_L5 * uL5;
@@ -356,7 +364,7 @@ for i=1:length(epochs)
     double_diff_geomC7 = d_C7*single_diff_geomC7;
     du_C7 = d_C7 * uC7;
     
-    double_diff_L7 = d_L7*single_diff_L7;
+    double_diff_L7 = d_L7*single_diff_L7*(c/phase_freq(4));
     double_diff_tropoL7 = d_L7*single_diff_tropoL7;
     double_diff_geomL7 = d_L7*single_diff_geomL7;
     du_L7 = d_L7 * uL7;
@@ -367,7 +375,7 @@ for i=1:length(epochs)
     double_diff_geomC8 = d_C8*single_diff_geomC8;
     du_C8 = d_C8 * uC8;
     
-    double_diff_L8 = d_L8*single_diff_L8;
+    double_diff_L8 = d_L8*single_diff_L8*(c/phase_freq(5));
     double_diff_tropoL8 = d_L8*single_diff_tropoL8;
     double_diff_geomL8 = d_L8*single_diff_geomL8;
     du_L8 = d_L8 * uL8;
@@ -381,8 +389,8 @@ for i=1:length(epochs)
     T = [double_diff_tropoL1;double_diff_tropoL6;double_diff_tropoL5;double_diff_tropoL7;double_diff_tropoL8;...
         double_diff_tropoC1;double_diff_tropoC6;double_diff_tropoC5;double_diff_tropoC7;double_diff_tropoC8];
     % ?????
-    R = [double_diff_geomC1;double_diff_geomC6;double_diff_geomC5;double_diff_geomC7;double_diff_geomC8;...
-        double_diff_geomL1;double_diff_geomL6;double_diff_geomL5;double_diff_geomL7;double_diff_geomL8];
+    R = [double_diff_geomL1;double_diff_geomL6;double_diff_geomL5;double_diff_geomL7;double_diff_geomL8;...
+        double_diff_geomC1;double_diff_geomC6;double_diff_geomC5;double_diff_geomC7;double_diff_geomC8];
     
     L = L - R - T;
     
@@ -419,22 +427,58 @@ for i=1:length(epochs)
     M1 = [ATCA ATCB; BTCA BTCB];
     M2 = [ATCL; BTCL];
     
+    % x_float
     xN = M1^-1 * M2;
+    x_float(:,i) = xN(1:3);
     N_float = xN(4:length(xN));
-    
-    Cv = inv(M1); 
+    N_float1{i} = N_float;
+    % macierze wariancyjno-kowariancyjne
+    Cv = M1^-1; 
+    Cx = Cv(1:3,1:3);
     Cn = Cv(4:length(xN),4:length(xN));
+    CxN = Cv(1:3, 4:length(xN));
+    CNx = Cv(4:length(xN),1:3);
     
-    [N_fixed,sqnorm(i,:),Ps(i),Qzhat,Z,nfixed,mu(i)]=LAMBDA(N_float,Cn);  %krzyczy w ldldecom
+    Dx_fixed = Cx - CxN*Cn^-1 * CNx;
+    % LAMBDA
+    [N_fixed,sqnorm(i,:),Ps(i),Qzhat,Z,nfixed(i),mu(i)]=LAMBDA(N_float,Cn);  %
     
-    ratio = sqnorm(:,2)./sqnorm(:,1)
+    N_fixed1 = N_fixed(:,1); % pierwsza kolumna z Nfixed
+    
+    % obliczenei x fixed
+    x_fixed(:,i) = x_float(:,i) - CxN*Cn^-1 * (N_float - N_fixed1);
+    % ratio 
+    ratio = sqnorm(:,2)./sqnorm(:,1);
+    
+    %b³êdy
+    m0 = sqrt(sum((x_float(:,i)-x_fixed(:,i)).^2)/2);
+    mx(i) = m0 * sqrt(Dx_fixed(1,1));
+    my(i) = m0 * sqrt(Dx_fixed(2,2));
+    mz(i) = m0 * sqrt(Dx_fixed(3,3));
+    
+    %% zerowanie 
+    xN = [];
+    Cv = [];
+%     x_float = [];
+    CxN = [];
+    Cn = [];
+%     N_float = [];
+    N_fixed1 = [];
+    Dx_fixed = [];
+    
+    ATCA = [];
+    ATCB = [];
+    BTCA = [];
+    BTCB = [];
+    
+    ATCL = [];
+    BTCL = [];
+    
+    M1 = [];
+    M2 = [];
+    
+    C0 = [];
+    
     %%
   
 end
-   
-
-
-
-
-
-
