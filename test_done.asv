@@ -4,6 +4,8 @@ load('dane_do_test.mat')
 X1 = X(1,:)'; %SEPT
 X2 = X(2,:)'; % SEP2
 epochs = gpsSecondsFirst:time_interval:gpsSecondsLast;
+act_time1 = epochs + dtrec1(:,2);
+act_time2 = epochs + dtrec2(:,2);
 fodw = 298.2572221;
 tau1 = 0.07;% przybli¿ony
 tau2 = 0.07;
@@ -45,8 +47,7 @@ L8b = [];
 del_1 = [];
 del_2 = [];
 info = {};
-N_float_info = nan(length(epochs), 40, length(obs_types));
-N_fixed_info = nan(length(epochs), 40, length(obs_types));
+N_info = nan(length(epochs), 40);
 
 for i=1:length(epochs)
     
@@ -432,7 +433,7 @@ for i=1:length(epochs)
     xN = M1^-1 * M2;
     x_float(:,i) = xN(1:3);
     N_float = xN(4:length(xN));
-    
+    N_float1{i} = N_float;
     % macierze wariancyjno-kowariancyjne
     Cv = M1^-1; 
     Cx = Cv(1:3,1:3);
@@ -452,10 +453,10 @@ for i=1:length(epochs)
     ratio = sqnorm(:,2)./sqnorm(:,1);
     
     %b³êdy
-%     m0 = sqrt(sum((x_float(:,i)-x_fixed(:,i)).^2)/2);
-%     mx(i) = m0 * sqrt(Dx_fixed(1,1));
-%     my(i) = m0 * sqrt(Dx_fixed(2,2));
-%     mz(i) = m0 * sqrt(Dx_fixed(3,3));
+    m0 = sqrt(sum((x_float(:,i)-x_fixed(:,i)).^2)/2);
+    mx(i) = m0 * sqrt(Dx_fixed(1,1));
+    my(i) = m0 * sqrt(Dx_fixed(2,2));
+    mz(i) = m0 * sqrt(Dx_fixed(3,3));
     
     %% zerowanie 
     xN = [];
@@ -479,6 +480,8 @@ for i=1:length(epochs)
     M2 = [];
     
     C0 = [];
+    
+    
     
     %%
   
