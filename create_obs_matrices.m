@@ -1,9 +1,9 @@
-function [L, B, DU, CL] = create_obs_matrices(time_interval, obs_types)
+function [L, B, DU, CL] = create_obs_matrices(epoch, obs_types, dtrec_idx)
 const;
 load('dane_do_test.mat')
 X1 = X(1,:)'; %SEPT
 X2 = X(2,:)'; % SEP2
-epochs = gpsSecondsFirst:time_interval:gpsSecondsLast;
+epochs = epoch;
 fodw = 298.2572221;
 tau1 = 0.07;% przybli¿ony
 tau2 = 0.07;
@@ -14,11 +14,20 @@ sigma = 0.002;
 phase_freq = [fE1 fE6 fE5 fE7 fE8];
 system = 'E';
 [sysPrefix, ~] = sysGNSS(system);
-fail_sats = [20 22 14 18]; 
+fail_sats = [20 22]; 
 [~, ~, H1] = togeod(a, fodw, X1(1), X1(2), X1(3));
 [~, ~, H2] = togeod(a, fodw, X2(1), X2(2), X2(3));
 
+
+
 for i=1:length(epochs)
+    L_L_all = [];
+    L_c_all = [];
+    B = [];
+    DU_L = [];
+    DU_c = [];
+    CL_L = [];
+    CL_c = [];
     
     i_epoch = find(cell2mat(obsTable1(:,1))==epochs(i)); % indeks wiersza w obsMatrix
     
@@ -58,8 +67,8 @@ for i=1:length(epochs)
            Xs1 = [];
            Xs2 = [];
            % wsp sat po poprawce zegara odbiornika i tau
-           Xs1 = lagrange(X_int, Y_int, epochs(i)-dtrec1(i,2)-tau1, 10);
-           Xs2 = lagrange(X_int, Y_int, epochs(i)-dtrec2(i,2)-tau2, 10);
+           Xs1 = lagrange(X_int, Y_int, epochs(i)-dtrec1(dtrec_idx,2)-tau1, 10);
+           Xs2 = lagrange(X_int, Y_int, epochs(i)-dtrec2(dtrec_idx,2)-tau2, 10);
            % znowu obrót
            Xs1  = e_r_corr(tau1, Xs1');
            Xs2 = e_r_corr(tau2, Xs2');
@@ -81,16 +90,18 @@ for i=1:length(epochs)
                %sprawdzenie czy obserwuje wszystkie sygna³y
                % ustawienie na pierwszym miejscu w obserwacjach
                while 1                 
-                   if any(isnan(obsMatrix1(i, sat_ref1,:)))                 
+                   if any(isnan(obsMatrix1(i_epoch, sat_ref1,:)))
+                       wys11 = wys1;
                        wys11(sat_ref1) = [];
                        sat_ref1 = find_ref_sat(wys11);
-                       sat_ref1 = find(wys1==wys11);                       
-                   elseif any(isnan(obsMatrix2(i, sat_ref2,:)))
+                       sat_ref1 = find(wys1==wys11(sat_ref1));                       
+                   elseif any(isnan(obsMatrix2(i_epoch, sat_ref2,:)))
+                       wys22 = wys2;
                        wys22(sat_ref2) = [];
                        sat_ref2 = find_ref_sat(wys22);
-                       sat_ref2 = find(wys2==wys22);
+                       sat_ref2 = find(wys2==wys22(sat_ref2));
                    end                  
-                   if all(~isnan(obsMatrix1(i, sat_ref1,:))) && all(~isnan(obsMatrix2(i, sat_ref2,:)))
+                   if all(~isnan(obsMatrix1(i_epoch, sat_ref1,:))) && all(~isnan(obsMatrix2(i_epoch, sat_ref2,:)))
                        break
                    end
                 end
@@ -109,8 +120,8 @@ for i=1:length(epochs)
 
                u([1 sat_ref2],:) = u([sat_ref2 1],:);
                C([1 sat_ref2]) = C([sat_ref2 1]);
-            end             
-           end        
+           end             
+        end        
                       
         % zapis obserwacji do odpowiedniej tablicy wed³ug typu
         if string(obs_types(j)) == "C1C" || string(obs_types(j)) == "L1C"
@@ -123,7 +134,7 @@ for i=1:length(epochs)
                 geom1 = geom1;
                 geom2 = geom2;
                 u = u;
-                C_c = C*2500; %%%%%
+                C_c1 = C*2500; %%%%%
                 single_diff = (b - a)';
                 single_diff_tropo = (dtropo2 - dtropo1)';
                 single_diff_geom = (geom2 - geom1)';
@@ -131,12 +142,21 @@ for i=1:length(epochs)
                 double_diff = d_c*single_diff;
                 double_diff_tropo = d_c*single_diff_tropo;
                 double_diff_geom = d_c*single_diff_geom;
-                du_c = d_c * u; 
+                du_c1 = d_c * u; 
 
                 L_c = [double_diff];
                 T_c = [double_diff_tropo];
                 R_c = [double_diff_geom];
-                               
+                L_c1 = L_c - R_c - T_c;
+                
+                C0 = diag(C_c1);
+
+                Cc_1 = 2 * d_c * C0 * d_c';
+                
+                L_c_all = [L_c_all; L_c1];
+                DU_c = [DU_c; du_c1];
+                CL_c = blkdiag(CL_c, Cc_1);
+
             elseif string(obs_types(j)) == "L1C"
                 a = obs1; 
                 b = obs2;
@@ -145,7 +165,7 @@ for i=1:length(epochs)
                 geom1 = geom1;
                 geom2 = geom2;
                 u = u;
-                C_L = C*2500;
+                C_L1 = C;
                 single_diff = (b - a)';
                 single_diff_tropo = (dtropo2 - dtropo1)';
                 single_diff_geom = (geom2 - geom1)';
@@ -153,7 +173,7 @@ for i=1:length(epochs)
                 double_diff = d_L*single_diff*(c/phase_freq(1));
                 double_diff_tropo = d_L*single_diff_tropo;
                 double_diff_geom = d_L*single_diff_geom;
-                du_L = d_L * u; 
+                du_L1 = d_L * u; 
 
                 L_L = [double_diff];
                 T_L = [double_diff_tropo];
@@ -163,20 +183,18 @@ for i=1:length(epochs)
                 B_L = eye(length(double_diff))*(c/phase_freq(1));
                 const_L = act_constellation;
                 
-                L = [L_L; L_c];
-                T = [T_L; T_c];
-                R = [R_L; R_c];
-                L_1 = L - R - T;
+                L_1 = L_L - R_L - T_L;
                 B1 = blkdiag(B_L);
                 B_1 = [B1];
 
-                C0 = blkdiag(diag(C_L), diag(C_c));
+                C0 = diag(C_L1);
 
-                D = blkdiag(d_L, d_c);
-                DU_1 = [du_L; du_c];
-
-                CL_1 = 2 * D * C0 * D';
-            
+                CL_1 = 2 * d_L * C0 * d_L';
+                
+                L_L_all = [L_L_all; L_1];
+                B = blkdiag(B, B_1);
+                DU_L = [DU_L; du_L1];
+                CL_L = blkdiag(CL_L, CL_1);          
             end
 
 
@@ -190,7 +208,7 @@ for i=1:length(epochs)
                 geom1 = geom1;
                 geom2 = geom2;
                 u = u;
-                C_c = C*2500; %%%%%
+                C_c2 = C*2500; %%%%%
                 single_diff = (b - a)';
                 single_diff_tropo = (dtropo2 - dtropo1)';
                 single_diff_geom = (geom2 - geom1)';
@@ -198,11 +216,20 @@ for i=1:length(epochs)
                 double_diff = d_c*single_diff;
                 double_diff_tropo = d_c*single_diff_tropo;
                 double_diff_geom = d_c*single_diff_geom;
-                du_c = d_c * u; 
+                du_c2 = d_c * u; 
 
                 L_c = [double_diff];
                 T_c = [double_diff_tropo];
                 R_c = [double_diff_geom];
+                L_c2 = L_c - R_c - T_c;
+                
+                C0 = diag(C_c2);
+
+                Cc_2 = 2 * d_c * C0 * d_c';
+                
+                L_c_all = [L_c_all; L_c2];
+                DU_c = [DU_c; du_c2];
+                CL_c = blkdiag(CL_c, Cc_2);
                                
             elseif string(obs_types(j)) == "L6C"
                 a = obs1; 
@@ -212,7 +239,7 @@ for i=1:length(epochs)
                 geom1 = geom1;
                 geom2 = geom2;
                 u = u;
-                C_L = C*2500;
+                C_L2 = C;
                 single_diff = (b - a)';
                 single_diff_tropo = (dtropo2 - dtropo1)';
                 single_diff_geom = (geom2 - geom1)';
@@ -220,7 +247,7 @@ for i=1:length(epochs)
                 double_diff = d_L*single_diff*(c/phase_freq(2));
                 double_diff_tropo = d_L*single_diff_tropo;
                 double_diff_geom = d_L*single_diff_geom;
-                du_L = d_L * u; 
+                du_L2 = d_L * u; 
 
                 L_L = [double_diff];
                 T_L = [double_diff_tropo];
@@ -230,20 +257,18 @@ for i=1:length(epochs)
                 B_L = eye(length(double_diff))*(c/phase_freq(2));
                 const_L = act_constellation;
                 
-                L = [L_L; L_c];
-                T = [T_L; T_c];
-                R = [R_L; R_c];
-                L_2 = L - R - T;
+                L_2 = L_L - R_L - T_L;
                 B1 = blkdiag(B_L);
                 B_2 = [B1];
 
-                C0 = blkdiag(diag(C_L), diag(C_c));
+                C0 = diag(C_L2);
 
-                D = blkdiag(d_L, d_c);
-                DU_2 = [du_L; du_c];
-
-                CL_2 = 2 * D * C0 * D';
-
+                CL_2 = 2 * d_L * C0 * d_L';
+                
+                L_L_all = [L_L_all; L_2];
+                B = blkdiag(B, B_2);
+                DU_L = [DU_L; du_L2];
+                CL_L = blkdiag(CL_L, CL_2); 
             end
             
         elseif string(obs_types(j)) == "C5Q" || string(obs_types(j)) == "L5Q"
@@ -256,7 +281,7 @@ for i=1:length(epochs)
                 geom1 = geom1;
                 geom2 = geom2;
                 u = u;
-                C_c = C*2500; %%%%%
+                C_c3 = C*2500; %%%%%
                 single_diff = (b - a)';
                 single_diff_tropo = (dtropo2 - dtropo1)';
                 single_diff_geom = (geom2 - geom1)';
@@ -264,11 +289,20 @@ for i=1:length(epochs)
                 double_diff = d_c*single_diff;
                 double_diff_tropo = d_c*single_diff_tropo;
                 double_diff_geom = d_c*single_diff_geom;
-                du_c = d_c * u; 
+                du_c3 = d_c * u; 
 
                 L_c = [double_diff];
                 T_c = [double_diff_tropo];
                 R_c = [double_diff_geom];
+                L_c3 = L_c - R_c - T_c;
+                
+                C0 = diag(C_c3);
+
+                Cc_3 = 2 * d_c * C0 * d_c';
+                
+                L_c_all = [L_c_all; L_c3];
+                DU_c = [DU_c; du_c3];
+                CL_c = blkdiag(CL_c, Cc_3);
                                
             elseif string(obs_types(j)) == "L5Q"
                 a = obs1; 
@@ -278,7 +312,7 @@ for i=1:length(epochs)
                 geom1 = geom1;
                 geom2 = geom2;
                 u = u;
-                C_L = C*2500;
+                C_L3 = C;
                 single_diff = (b - a)';
                 single_diff_tropo = (dtropo2 - dtropo1)';
                 single_diff_geom = (geom2 - geom1)';
@@ -286,7 +320,7 @@ for i=1:length(epochs)
                 double_diff = d_L*single_diff*(c/phase_freq(3));
                 double_diff_tropo = d_L*single_diff_tropo;
                 double_diff_geom = d_L*single_diff_geom;
-                du_L = d_L * u; 
+                du_L3 = d_L * u; 
 
                 L_L = [double_diff];
                 T_L = [double_diff_tropo];
@@ -296,18 +330,18 @@ for i=1:length(epochs)
                 B_L = eye(length(double_diff))*(c/phase_freq(3));
                 const_L = act_constellation;
                 
-                L = [L_L; L_c];
-                T = [T_L; T_c];
-                R = [R_L; R_c];
-                L_3 = L - R - T;
+                L_3 = L_L - R_L - T_L;
                 B1 = blkdiag(B_L);
                 B_3 = [B1];
 
-                C0 = blkdiag(diag(C_L), diag(C_c));
+                C0 = diag(C_L3);
 
-                D = blkdiag(d_L, d_c);
-                DU_3 = [du_L; du_c];
-                CL_3 = 2 * D * C0 * D';
+                CL_3 = 2 * d_L * C0 * d_L';
+                
+                L_L_all = [L_L_all; L_3];
+                B = blkdiag(B, B_3);
+                DU_L = [DU_L; du_L3];
+                CL_L = blkdiag(CL_L, CL_3); 
                 
             end
             
@@ -321,7 +355,7 @@ for i=1:length(epochs)
                 geom1 = geom1;
                 geom2 = geom2;
                 u = u;
-                C_c = C*2500; %%%%%
+                C_c4 = C*2500; %%%%%
                 single_diff = (b - a)';
                 single_diff_tropo = (dtropo2 - dtropo1)';
                 single_diff_geom = (geom2 - geom1)';
@@ -329,11 +363,20 @@ for i=1:length(epochs)
                 double_diff = d_c*single_diff;
                 double_diff_tropo = d_c*single_diff_tropo;
                 double_diff_geom = d_c*single_diff_geom;
-                du_c = d_c * u; 
+                du_c4 = d_c * u; 
 
                 L_c = [double_diff];
                 T_c = [double_diff_tropo];
                 R_c = [double_diff_geom];
+                L_c4 = L_c - R_c - T_c;
+                
+                C0 = diag(C_c4);
+
+                Cc_4 = 2 * d_c * C0 * d_c';
+                
+                L_c_all = [L_c_all; L_c4];
+                DU_c = [DU_c; du_c4];
+                CL_c = blkdiag(CL_c, Cc_4);
                                
             elseif string(obs_types(j)) == "L7Q"
                 a = obs1; 
@@ -343,7 +386,7 @@ for i=1:length(epochs)
                 geom1 = geom1;
                 geom2 = geom2;
                 u = u;
-                C_L = C*2500;
+                C_L4 = C;
                 single_diff = (b - a)';
                 single_diff_tropo = (dtropo2 - dtropo1)';
                 single_diff_geom = (geom2 - geom1)';
@@ -351,7 +394,7 @@ for i=1:length(epochs)
                 double_diff = d_L*single_diff*(c/phase_freq(4));
                 double_diff_tropo = d_L*single_diff_tropo;
                 double_diff_geom = d_L*single_diff_geom;
-                du_L = d_L * u; 
+                du_L4 = d_L * u; 
 
                 L_L = [double_diff];
                 T_L = [double_diff_tropo];
@@ -361,18 +404,18 @@ for i=1:length(epochs)
                 B_L = eye(length(double_diff))*(c/phase_freq(4));
                 const_L = act_constellation;
                 
-                L = [L_L; L_c];
-                T = [T_L; T_c];
-                R = [R_L; R_c];
-                L_4 = L - R - T;
+                L_4 = L_L - R_L - T_L;
                 B1 = blkdiag(B_L);
                 B_4 = [B1];
 
-                C0 = blkdiag(diag(C_L), diag(C_c));
+                C0 = diag(C_L4);
 
-                D = blkdiag(d_L, d_c);
-                DU_4 = [du_L; du_c];
-                CL_4 = 2 * D * C0 * D';
+                CL_4 = 2 * d_L * C0 * d_L';
+                
+                L_L_all = [L_L_all; L_4];
+                B = blkdiag(B, B_4);
+                DU_L = [DU_L; du_L4];
+                CL_L = blkdiag(CL_L, CL_4); 
                 
             end
             
@@ -386,7 +429,7 @@ for i=1:length(epochs)
                 geom1 = geom1;
                 geom2 = geom2;
                 u = u;
-                C_c = C*2500; %%%%%
+                C_c5 = C*2500; %%%%%
                 single_diff = (b - a)';
                 single_diff_tropo = (dtropo2 - dtropo1)';
                 single_diff_geom = (geom2 - geom1)';
@@ -394,11 +437,20 @@ for i=1:length(epochs)
                 double_diff = d_c*single_diff;
                 double_diff_tropo = d_c*single_diff_tropo;
                 double_diff_geom = d_c*single_diff_geom;
-                du_c = d_c * u; 
+                du_c5 = d_c * u; 
 
                 L_c = [double_diff];
                 T_c = [double_diff_tropo];
                 R_c = [double_diff_geom];
+                L_c5 = L_c - R_c - T_c;
+                
+                C0 = diag(C_c5);
+
+                Cc_5 = 2 * d_c * C0 * d_c';
+                
+                L_c_all = [L_c_all; L_c5];
+                DU_c = [DU_c; du_c5];
+                CL_c = blkdiag(CL_c, Cc_5);
                                
             elseif string(obs_types(j)) == "L8Q"
                 a = obs1; 
@@ -408,7 +460,7 @@ for i=1:length(epochs)
                 geom1 = geom1;
                 geom2 = geom2;
                 u = u;
-                C_L = C*2500;
+                C_L5 = C;
                 single_diff = (b - a)';
                 single_diff_tropo = (dtropo2 - dtropo1)';
                 single_diff_geom = (geom2 - geom1)';
@@ -416,7 +468,7 @@ for i=1:length(epochs)
                 double_diff = d_L*single_diff*(c/phase_freq(5));
                 double_diff_tropo = d_L*single_diff_tropo;
                 double_diff_geom = d_L*single_diff_geom;
-                du_L = d_L * u; 
+                du_L5 = d_L * u; 
 
                 L_L = [double_diff];
                 T_L = [double_diff_tropo];
@@ -426,18 +478,18 @@ for i=1:length(epochs)
                 B_L = eye(length(double_diff))*(c/phase_freq(5));
                 const_L = act_constellation;
                 
-                L = [L_L; L_c];
-                T = [T_L; T_c];
-                R = [R_L; R_c];
-                L_5 = L - R - T;
+                L_5 = L_L - R_L - T_L;
                 B1 = blkdiag(B_L);
                 B_5 = [B1];
 
-                C0 = blkdiag(diag(C_L), diag(C_c));
+                C0 = diag(C_L5);
 
-                D = blkdiag(d_L, d_c);
-                DU_5 = [du_L; du_c];
-                CL_5 = 2 * D * C0 * D';
+                CL_5 = 2 * d_L * C0 * d_L';
+                
+                L_L_all = [L_L_all; L_5];
+                B = blkdiag(B, B_5);
+                DU_L = [DU_L; du_L5];
+                CL_L = blkdiag(CL_L, CL_5); 
                 
             end
         end
@@ -458,12 +510,13 @@ for i=1:length(epochs)
 
 end
 
-L = [L_1; L_2; L_3; L_4; L_5];
-B = blkdiag(B_1, B_2, B_3, B_4, B_5);
+L = [L_L_all; L_c_all];
+B = blkdiag(B);
 B0 = zeros(size(B));
 B = [B; B0];
-DU = [DU_1; DU_2; DU_3; DU_4; DU_5];
-CL = blkdiag(CL_1, CL_2, CL_3, CL_4, CL_5);
+DU = [DU_L; DU_c];
+CL = blkdiag(CL_L, CL_c);
+
 
 end
 

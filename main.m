@@ -25,12 +25,12 @@ X = [3655333.1790  1403901.2258  5018038.3565; %SEPT
     3655336.8160  1403899.0382  5018036.4527]; % SEP2
 %  
 codes = ["C1C" "C5Q"]; % wybrane kody
-time_interval = 100; % interwa³ na jaki chcemy pozycje
+time_interval = 30; % interwa³ na jaki chcemy pozycje
 system = 'E';
 data = ["2018-SEPT.mat" "2018-SEP2.mat"]; %wczytane dane dla odbiorników
 
-[X_code1, DOP1, dtrec1, Az_EL_R1, tropo1, tau1] = codepos(X(1,:), codes, time_interval, system, data(1));
-[X_code2, DOP2, dtrec2, Az_EL_R2, tropo2, tau2] = codepos(X(2,:), codes, time_interval, system, data(2));
+[X_code1, DOP1, dtrec1] = codepos(X(1,:), codes, time_interval, system, data(1));
+[X_code2, DOP2, dtrec2] = codepos(X(2,:), codes, time_interval, system, data(2));
 
 d = X_code1 - X_code2;
 % 

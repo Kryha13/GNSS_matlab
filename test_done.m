@@ -1,5 +1,6 @@
 const;
 load('dane_do_test.mat')
+time_interval = 100;
 % time_interval = 100;
 X1 = X(1,:)'; %SEPT
 X2 = X(2,:)'; % SEP2
@@ -105,31 +106,31 @@ for i=1:length(epochs)
            obs1(k) = obsMatrix1(i_epoch, prn_idx, i_obs);
            obs2(k) = obsMatrix2(i_epoch, prn_idx, i_obs);
            % wyci¹gniêcie tylko czêœci wspólnej dla obu odbiorników
-           if isnan(obs1(k))
-               obs1(k)=[];
-               obs2(k) = [];
-               geom1(k) = [];
-               geom2(k) = [];
-               dtropo1(k) = [];
-               dtropo2(k) = [];
-               wys1(k) = [];
-               wys2(k) = [];
-               u(k) = [];
-               C(k) = [];
-               del_1(k) = k; %pomocnicze do sat ref
-           elseif isnan(obs2(k))
-               obs2(k) = [];
-               obs1(k) = [];
-               geom1(k) = [];
-               geom2(k) = [];
-               dtropo1(k) = [];
-               dtropo2(k) = [];
-               wys1(k) = [];
-               wys2(k) = [];
-               u(k) = [];
-               C(k) = [];
-               del_2(k) = k;
-           end
+%            if isnan(obs1(k))
+%                obs1(k)=[];
+%                obs2(k) = [];
+%                geom1(k) = [];
+%                geom2(k) = [];
+%                dtropo1(k) = [];
+%                dtropo2(k) = [];
+%                wys1(k) = [];
+%                wys2(k) = [];
+%                u(k) = [];
+%                C(k) = [];
+%                del_1(k) = k; %pomocnicze do sat ref
+%            elseif isnan(obs2(k))
+%                obs2(k) = [];
+%                obs1(k) = [];
+%                geom1(k) = [];
+%                geom2(k) = [];
+%                dtropo1(k) = [];
+%                dtropo2(k) = [];
+%                wys1(k) = [];
+%                wys2(k) = [];
+%                u(k) = [];
+%                C(k) = [];
+%                del_2(k) = k;
+%            end
            
            % satelita referencyjny 
            if k==nsat
