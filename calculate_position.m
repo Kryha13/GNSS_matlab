@@ -6,7 +6,7 @@ dtrec_idx = 1;
 
 for i=1:length(epochs)
     
-    [L, B, DU, CL] = create_obs_matrices(epochs(i), obs_types, dtrec_idx);
+    [L, B, DU, CL, ~] = create_obs_matrices(epochs(i), obs_types, dtrec_idx);
 
     %% rozwi¹zanie modelu pozycjonowania - FLOAT
     ATCA = DU' * (CL)^-1 * DU;

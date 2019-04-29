@@ -1,4 +1,4 @@
-function [L, B, DU, CL] = create_obs_matrices(epoch, obs_types, dtrec_idx)
+function [L, B, DU, CL, obs_qty] = create_obs_matrices(epoch, obs_types, dtrec_idx)
 const;
 load('dane_do_test.mat')
 X1 = X(1,:)'; %SEPT
@@ -19,7 +19,6 @@ fail_sats = [20 22];
 [~, ~, H2] = togeod(a, fodw, X2(1), X2(2), X2(3));
 
 
-
 for i=1:length(epochs)
     L_L_all = [];
     L_c_all = [];
@@ -28,19 +27,46 @@ for i=1:length(epochs)
     DU_c = [];
     CL_L = [];
     CL_c = [];
+    obs_qty_C = [];
+    obs_qty_L = [];
     
+        
     i_epoch = find(cell2mat(obsTable1(:,1))==epochs(i)); % indeks wiersza w obsMatrix
+    
+    for x = 1:14
+       
+        con1 = find(~isnan(obsMatrix1(i_epoch, :, x)));
+        cons1 = find(~isnan(obsMatrix1(i_epoch, :, x+1)));
+        constellation1{x} = intersect(con1, cons1, 'stable');
+        con2 = find(~isnan(obsMatrix2(i_epoch, :, x)));
+        cons2 = find(~isnan(obsMatrix2(i_epoch, :, x+1)));
+        constellation2{x} = intersect(con2, cons2, 'stable');
+        
+    end
+    
+    for cc = 1:14
+       
+        constel{cc} = intersect(cell2mat(constellation1(cc)), cell2mat(constellation2(cc)), 'stable');
+        
+    end
+    
+    
+    act_constellation = mintersect(cell2mat(constel(1)), cell2mat(constel(2)), cell2mat(constel(3)),...
+        cell2mat(constel(4)),cell2mat(constel(5)),cell2mat(constel(6)),cell2mat(constel(7)),...
+        cell2mat(constel(8)), cell2mat(constel(9)), cell2mat(constel(10)), cell2mat(constel(11)),...
+        cell2mat(constel(12)), cell2mat(constel(13)), cell2mat(constel(14)));
+    act_constellation = setdiff(act_constellation, fail_sats); % usuniêcie fail
+    nsat = length(act_constellation);
     
     for j=1:length(obs_types)
         
         i_obs = find(string(obsType1(:))==obs_types(j)); % indeks warstwy w obsMatrix
         % konstelacje dla obu odbiorników w danej epoce
-        act_constellation_1 = find(~isnan(obsMatrix1(i_epoch,:,i_obs))); 
-        act_constellation_2 = find(~isnan(obsMatrix2(i_epoch,:,i_obs)));
+%         act_constellation_1 = find(~isnan(obsMatrix1(i_epoch,:,i_obs))); 
+%         act_constellation_2 = find(~isnan(obsMatrix2(i_epoch,:,i_obs)));
         % czêœæ wspólna konstelacji
-        act_constellation = intersect(act_constellation_1, act_constellation_2, 'stable');
-        act_constellation = setdiff(act_constellation, fail_sats); % usuniêcie fail
-        nsat = length(act_constellation);
+%         act_constellation = intersect(act_constellation_1, act_constellation_2, 'stable');
+
         
         for k=1:nsat
             
@@ -156,6 +182,8 @@ for i=1:length(epochs)
                 L_c_all = [L_c_all; L_c1];
                 DU_c = [DU_c; du_c1];
                 CL_c = blkdiag(CL_c, Cc_1);
+                
+                obs_qty_C = [obs_qty_C; obs_types(j) length(double_diff)];
 
             elseif string(obs_types(j)) == "L1C"
                 a = obs1; 
@@ -194,7 +222,9 @@ for i=1:length(epochs)
                 L_L_all = [L_L_all; L_1];
                 B = blkdiag(B, B_1);
                 DU_L = [DU_L; du_L1];
-                CL_L = blkdiag(CL_L, CL_1);          
+                CL_L = blkdiag(CL_L, CL_1);
+                
+                obs_qty_L = [obs_qty_L; obs_types(j) length(double_diff)];
             end
 
 
@@ -230,6 +260,7 @@ for i=1:length(epochs)
                 L_c_all = [L_c_all; L_c2];
                 DU_c = [DU_c; du_c2];
                 CL_c = blkdiag(CL_c, Cc_2);
+                obs_qty_C = [obs_qty_C; obs_types(j) length(double_diff)];
                                
             elseif string(obs_types(j)) == "L6C"
                 a = obs1; 
@@ -268,7 +299,8 @@ for i=1:length(epochs)
                 L_L_all = [L_L_all; L_2];
                 B = blkdiag(B, B_2);
                 DU_L = [DU_L; du_L2];
-                CL_L = blkdiag(CL_L, CL_2); 
+                CL_L = blkdiag(CL_L, CL_2);
+                obs_qty_L = [obs_qty_L; obs_types(j) length(double_diff)];
             end
             
         elseif string(obs_types(j)) == "C5Q" || string(obs_types(j)) == "L5Q"
@@ -303,6 +335,7 @@ for i=1:length(epochs)
                 L_c_all = [L_c_all; L_c3];
                 DU_c = [DU_c; du_c3];
                 CL_c = blkdiag(CL_c, Cc_3);
+                obs_qty_C = [obs_qty_C; obs_types(j) length(double_diff)];
                                
             elseif string(obs_types(j)) == "L5Q"
                 a = obs1; 
@@ -341,7 +374,8 @@ for i=1:length(epochs)
                 L_L_all = [L_L_all; L_3];
                 B = blkdiag(B, B_3);
                 DU_L = [DU_L; du_L3];
-                CL_L = blkdiag(CL_L, CL_3); 
+                CL_L = blkdiag(CL_L, CL_3);
+                obs_qty_L = [obs_qty_L; obs_types(j) length(double_diff)];
                 
             end
             
@@ -377,6 +411,7 @@ for i=1:length(epochs)
                 L_c_all = [L_c_all; L_c4];
                 DU_c = [DU_c; du_c4];
                 CL_c = blkdiag(CL_c, Cc_4);
+                obs_qty_C = [obs_qty_C; obs_types(j) length(double_diff)];
                                
             elseif string(obs_types(j)) == "L7Q"
                 a = obs1; 
@@ -415,7 +450,8 @@ for i=1:length(epochs)
                 L_L_all = [L_L_all; L_4];
                 B = blkdiag(B, B_4);
                 DU_L = [DU_L; du_L4];
-                CL_L = blkdiag(CL_L, CL_4); 
+                CL_L = blkdiag(CL_L, CL_4);
+                obs_qty_L = [obs_qty_L; obs_types(j) length(double_diff)];
                 
             end
             
@@ -451,6 +487,7 @@ for i=1:length(epochs)
                 L_c_all = [L_c_all; L_c5];
                 DU_c = [DU_c; du_c5];
                 CL_c = blkdiag(CL_c, Cc_5);
+                obs_qty_C = [obs_qty_C; obs_types(j) length(double_diff)];
                                
             elseif string(obs_types(j)) == "L8Q"
                 a = obs1; 
@@ -489,7 +526,8 @@ for i=1:length(epochs)
                 L_L_all = [L_L_all; L_5];
                 B = blkdiag(B, B_5);
                 DU_L = [DU_L; du_L5];
-                CL_L = blkdiag(CL_L, CL_5); 
+                CL_L = blkdiag(CL_L, CL_5);
+                obs_qty_L = [obs_qty_L; obs_types(j) length(double_diff)];
                 
             end
         end
@@ -516,6 +554,7 @@ B0 = zeros(size(B));
 B = [B; B0];
 DU = [DU_L; DU_c];
 CL = blkdiag(CL_L, CL_c);
+obs_qty = [obs_qty_L; obs_qty_C];
 
 
 end
