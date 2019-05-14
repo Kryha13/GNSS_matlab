@@ -112,7 +112,7 @@ phase_freq = [fE1 fE6 fE7 fE5];
         
         [L1, ~, DU1, CL1, obs_qty1] = create_obs_matrices(epochs(i), ["L1C"], dtrec_idx);
         L1 = L1 * phase_freq(1)/c;
-        [lam_com3] = get_com_lambda(2);
+        [lam_com3] = get_com_lambda(3);
         Lcom3 = (L1 - L2)*lam_com3;
         [lam_trans2] = get_com_lambda(5);
         Ltrans2 = (5*L1 - 2*L3 - 3*L4)*lam_trans2;
